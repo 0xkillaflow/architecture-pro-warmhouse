@@ -1,0 +1,31 @@
+@startuml components-automation-service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Component - Automation Service
+
+Container(gateway, "API Gateway", "nginx")
+ContainerDb(automation_db, "Automation DB", "PostgreSQL")
+ContainerQueue(kafka, "Message Broker", "Kafka")
+
+Container_Boundary(automation_svc, "Automation Service") {
+    Component(api, "Script API", "REST handler", "CRUD сценариев, включение/выключение")
+    Component(repo, "Script Repository", "Go", "Сценарии, условия, действия")
+    Component(consumer, "Event Consumer", "Kafka consumer", "telemetry.reading, device.state-changed")
+    Component(scheduler, "Scheduler", "Go, cron", "Триггеры по времени")
+    Component(engine, "Rule Engine", "Go", "Проверяет условия сценария (ScriptCondition) и решает, запускать ли его")
+    Component(executor, "Action Executor", "Go", "Выполняет действия сценария (устанавливает значения свойств устройств)")
+    Component(publisher, "Event Publisher", "Kafka producer", "device.property-set-requested")
+}
+
+Rel(gateway, api, "REST", "JSON/HTTPS")
+Rel(api, repo, "Использует")
+Rel(kafka, consumer, "telemetry.reading, device.state-changed")
+Rel(consumer, engine, "Событие")
+Rel(scheduler, engine, "Тик по расписанию")
+Rel(engine, repo, "Читает активные сценарии")
+Rel(engine, executor, "Запускает сценарий")
+Rel(executor, publisher, "Новые значения свойств")
+Rel(publisher, kafka, "device.property-set-requested")
+Rel(repo, automation_db, "SQL")
+
+@enduml

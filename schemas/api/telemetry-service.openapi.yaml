@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: Telemetry Service API
+  version: 1.0.0
+  description: Чтение телеметрии устройств. Запись телеметрии идёт асинхронно через Kafka (см. AsyncAPI).
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Через API Gateway
+security:
+  - bearerAuth: []
+
+paths:
+  /telemetry/devices/{deviceId}:
+    get:
+      summary: Получить историю телеметрии устройства за период
+      operationId: getDeviceTelemetry
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+          example: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+        - name: metric
+          in: query
+          schema: { type: string }
+          example: temperature
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+          example: "2026-10-03T00:00:00Z"
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+          description: По умолчанию — текущий момент
+          example: "2026-10-03T12:00:00Z"
+        - name: limit
+          in: query
+          schema: { type: integer, default: 1000, maximum: 10000 }
+      responses:
+        '200':
+          description: Показания, отсортированные по времени (сначала новые)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deviceId, items]
+                properties:
+                  deviceId: { type: string, format: uuid }
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TelemetryPoint'
+              examples:
+                temperature:
+                  value:
+                    deviceId: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+                    items:
+                      - metric: temperature
+                        value: 21.8
+                        unit: "°C"
+                        recordedAt: "2026-10-03T11:55:00Z"
+                      - metric: temperature
+                        value: 21.5
+                        unit: "°C"
+                        recordedAt: "2026-10-03T11:50:00Z"
+        '400':
+          description: Неверные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badPeriod:
+                  value:
+                    code: VALIDATION_ERROR
+                    message: "'from' must be earlier than 'to'"
+        '403':
+          description: Нет доступа к устройству
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: ACCESS_DENIED
+                    message: "User has no access to this device"
+        '404':
+          description: Устройство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: DEVICE_NOT_FOUND
+                    message: "Device not found"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                internal:
+                  value:
+                    code: INTERNAL_ERROR
+                    message: "Internal server error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    TelemetryPoint:
+      type: object
+      required: [metric, value, recordedAt]
+      properties:
+        metric: { type: string }
+        value: { type: number }
+        unit: { type: string }
+        recordedAt: { type: string, format: date-time }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }

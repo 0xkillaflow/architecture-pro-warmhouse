@@ -1,0 +1,52 @@
+@startuml code-set-property-sequence
+title Code - установка значения свойства устройства (целевая температура отопления)
+
+actor "Пользователь" as user
+participant "API Gateway" as gw
+participant "DeviceController" as ctrl
+participant "PropertyService" as props
+database "Devices DB" as db
+queue "Kafka" as kafka
+participant "Device Gateway" as dgw
+participant "Устройство" as device
+participant "DeviceStateManager" as state
+
+user -> gw : PUT /api/v1/devices/42/properties/target_temperature\n{"value": 22}
+gw -> ctrl : (JWT проверен)
+ctrl -> ctrl : device.houseId есть в claim houses JWT?
+ctrl -> props : setProperty(deviceId, "target_temperature", 22)
+props -> db : SELECT device_property (device_id, name)
+alt свойства нет
+    props --> ctrl : PropertyNotFound
+    ctrl --> gw : 404 PROPERTY_NOT_FOUND
+    gw --> user : 404
+end
+props -> kafka : publish device.property-set
+props --> ctrl : accepted
+ctrl --> gw : 202 Accepted
+gw --> user : 202 Accepted
+
+== асинхронно ==
+kafka -> dgw : device.property-set
+dgw -> device : MQTT devices/42/set {"target_temperature": 22}
+device --> dgw : MQTT devices/42/state (текущие значения свойств)
+dgw -> kafka : publish device.state-changed
+kafka -> state : device.state-changed
+state -> db : UPDATE device_property\nSET value = 22, updated_at = now()
+
+note over state
+  Если устройство не применило значение,
+  в его состоянии остаётся старое значение,
+  и оно же остаётся в device_property.
+end note
+
+== клиент смотрит результат (polling) ==
+loop пока значение не обновилось (раз в 1-2 с, с таймаутом)
+    user -> gw : GET /api/v1/devices/42
+    gw -> ctrl : (JWT проверен)
+    ctrl -> db : SELECT device, device_property
+    ctrl --> gw : 200 {properties: [{name: target_temperature, value: 22, updatedAt}], status}
+    gw --> user : 200
+end
+
+@enduml

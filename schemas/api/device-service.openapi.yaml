@@ -1,0 +1,363 @@
+openapi: 3.1.2
+info:
+  title: Device Service API
+  version: 1.0.0
+  description: |
+    Управление устройствами экосистемы «Тёплый дом»: регистрация, получение информации,
+    изменение настроек, просмотр и установка значений свойств устройства (power, target_temperature, ...).
+    Установка значения выполняется асинхронно: сервис принимает запрос (202 Accepted) и передаёт его
+    устройству через Kafka → Device Gateway → MQTT. Новое значение появляется в устройстве после
+    подтверждения от него.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Через API Gateway
+security:
+  - bearerAuth: []
+
+paths:
+  /devices:
+    post:
+      summary: Зарегистрировать устройство в доме
+      operationId: registerDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCreate'
+            examples:
+              heating:
+                value:
+                  houseId: "6f1c2a7e-1b2d-4c3e-9f10-2a3b4c5d6e7f"
+                  roomId: "a1b2c3d4-0000-4000-8000-000000000001"
+                  typeCode: "heating"
+                  serialNumber: "HT-2024-000123"
+                  name: "Котёл в гостиной"
+      responses:
+        '201':
+          description: Устройство зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+              examples:
+                created:
+                  $ref: '#/components/examples/HeatingDevice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Устройство с таким серийным номером уже зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                duplicate:
+                  value:
+                    code: DEVICE_ALREADY_EXISTS
+                    message: "Device with serial number HT-2024-000123 already exists"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /devices/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/DeviceId'
+    get:
+      summary: Получить информацию об устройстве
+      operationId: getDevice
+      responses:
+        '200':
+          description: Информация об устройстве и его текущем состоянии
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+              examples:
+                heating:
+                  $ref: '#/components/examples/HeatingDevice'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      summary: Обновить настройки устройства
+      description: Изменение имени, комнаты или отключение устройства пользователем.
+      operationId: updateDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceUpdate'
+            examples:
+              rename:
+                value:
+                  name: "Котёл на кухне"
+                  roomId: "a1b2c3d4-0000-4000-8000-000000000003"
+              disable:
+                value:
+                  status: "disabled"
+      responses:
+        '200':
+          description: Устройство обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+              examples:
+                updated:
+                  $ref: '#/components/examples/HeatingDevice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /devices/{deviceId}/properties/{name}:
+    parameters:
+      - $ref: '#/components/parameters/DeviceId'
+      - name: name
+        in: path
+        required: true
+        description: Имя свойства устройства
+        schema:
+          type: string
+        example: "target_temperature"
+    put:
+      summary: Установить значение свойства устройства
+      description: |
+        Это и обновление состояния, и команда устройству: «включить» — `power = on`,
+        «задать температуру» — `target_temperature = 22`, «открыть ворота» — `position = open`.
+        Сервис проверяет, что у устройства есть такое свойство, и публикует запрос в топик
+        `device.property-set`. Значение свойства меняется, когда устройство подтвердит его
+        (событие `device.state-changed`). Клиент узнаёт результат опросом `GET /devices/{deviceId}`:
+        значение свойства и его `updatedAt` обновятся.
+      operationId: setProperty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropertySet'
+            examples:
+              setTemperature:
+                summary: Задать целевую температуру
+                value:
+                  value: 22
+              turnOn:
+                summary: Включить
+                value:
+                  value: "on"
+              openGate:
+                summary: Открыть ворота (свойство position)
+                value:
+                  value: "open"
+      responses:
+        '202':
+          description: Запрос принят и передан устройству
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropertySetAccepted'
+              examples:
+                accepted:
+                  value:
+                    deviceId: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+                    name: "target_temperature"
+                    value: 22
+                    requestedAt: "2026-10-03T09:15:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Устройство или свойство не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                propertyNotFound:
+                  value:
+                    code: PROPERTY_NOT_FOUND
+                    message: "Device has no property 'position'"
+        '409':
+          description: Устройство отключено (disabled) или не в сети
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                offline:
+                  value:
+                    code: DEVICE_OFFLINE
+                    message: "Device is offline"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    DeviceId:
+      name: deviceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+
+  schemas:
+    DeviceCreate:
+      type: object
+      required: [houseId, typeCode, serialNumber, name]
+      properties:
+        houseId: { type: string, format: uuid }
+        roomId: { type: string, format: uuid }
+        typeCode:
+          type: string
+          description: Код типа устройства из справочника (heating, light, gate, camera, ...)
+        serialNumber: { type: string }
+        name: { type: string }
+
+    DeviceUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        roomId: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [active, disabled]
+
+    Device:
+      type: object
+      required: [id, houseId, typeCode, serialNumber, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        houseId: { type: string, format: uuid }
+        roomId: { type: [string, 'null'], format: uuid }
+        typeCode: { type: string }
+        serialNumber: { type: string }
+        name: { type: string }
+        status:
+          type: string
+          enum: [online, offline, disabled]
+        properties:
+          type: array
+          description: Свойства устройства и их текущие (подтверждённые устройством) значения
+          items:
+            $ref: '#/components/schemas/DeviceProperty'
+        lastSeenAt: { type: [string, 'null'], format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    DeviceProperty:
+      type: object
+      required: [name, value, updatedAt]
+      properties:
+        name:
+          type: string
+          description: power, target_temperature, position, ...
+        value:
+          description: Значение свойства (строка, число или boolean)
+        updatedAt: { type: string, format: date-time }
+
+    PropertySet:
+      type: object
+      required: [value]
+      properties:
+        value:
+          description: Новое значение свойства (строка, число или boolean)
+
+    PropertySetAccepted:
+      type: object
+      required: [deviceId, name, value, requestedAt]
+      properties:
+        deviceId: { type: string, format: uuid }
+        name: { type: string }
+        value: {}
+        requestedAt: { type: string, format: date-time }
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+  examples:
+    HeatingDevice:
+      value:
+        id: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+        houseId: "6f1c2a7e-1b2d-4c3e-9f10-2a3b4c5d6e7f"
+        roomId: "a1b2c3d4-0000-4000-8000-000000000001"
+        typeCode: "heating"
+        serialNumber: "HT-2024-000123"
+        name: "Котёл в гостиной"
+        status: "online"
+        properties:
+          - name: "power"
+            value: "on"
+            updatedAt: "2026-10-03T09:10:00Z"
+          - name: "target_temperature"
+            value: 22
+            updatedAt: "2026-10-03T09:15:02Z"
+        lastSeenAt: "2026-10-03T09:14:55Z"
+        createdAt: "2026-09-01T12:00:00Z"
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            validation:
+              value:
+                code: VALIDATION_ERROR
+                message: "Field 'name' is required"
+    Forbidden:
+      description: Нет доступа к дому, которому принадлежит устройство
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            forbidden:
+              value:
+                code: ACCESS_DENIED
+                message: "User has no access to this house"
+    NotFound:
+      description: Устройство не найдено
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            notFound:
+              value:
+                code: DEVICE_NOT_FOUND
+                message: "Device not found"
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            internal:
+              value:
+                code: INTERNAL_ERROR
+                message: "Internal server error"

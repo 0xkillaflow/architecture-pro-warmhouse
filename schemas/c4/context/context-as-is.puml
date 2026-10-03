@@ -1,0 +1,17 @@
+@startuml context-as-is
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title C4 Context - «Тёплый дом» (As-Is)
+
+Person(user, "Пользователь", "Владелец дома. Смотрит температуру, включает/выключает отопление")
+Person(specialist, "Специалист по подключению", "Сотрудник компании. Выезжает к клиенту и подключает датчики к системе")
+
+System(smart_home, "Smart Home (монолит)", "Go + PostgreSQL. Управление отоплением и мониторинг температуры")
+
+System_Ext(sensors, "Датчики температуры и реле отопления", "Установлены в домах (~100 шт.)")
+
+Rel(user, smart_home, "Просматривает температуру, управляет отоплением")
+Rel(specialist, smart_home, "Регистрирует датчики (добавление/удаление)")
+Rel(smart_home, sensors, "Запрашивает температуру, отправляет команды (синхронно, сервер → датчик)")
+
+@enduml

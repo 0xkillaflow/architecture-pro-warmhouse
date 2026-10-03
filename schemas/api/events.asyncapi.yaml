@@ -1,0 +1,157 @@
+asyncapi: 2.6.0
+info:
+  title: Warm House Events
+  version: 1.0.0
+  description: |
+    Асинхронное взаимодействие сервисов экосистемы «Тёплый дом» через Kafka.
+    Ключ сообщения - deviceId, поэтому события одного устройства обрабатываются по порядку.
+servers:
+  kafka:
+    url: kafka:9092
+    protocol: kafka
+
+channels:
+  telemetry.reading:
+    description: Новое показание устройства, нормализованное Device Gateway
+    publish:
+      summary: Device Gateway публикует показание
+      operationId: publishTelemetryReading
+      message:
+        $ref: '#/components/messages/TelemetryReading'
+    subscribe:
+      summary: Telemetry Service сохраняет показание, Automation Service проверяет триггеры
+      operationId: consumeTelemetryReading
+      message:
+        $ref: '#/components/messages/TelemetryReading'
+
+  device.property-set-requested:
+    description: Запрос сценария автоматизации на установку значения свойства устройства
+    publish:
+      summary: Automation Service запрашивает установку значения
+      operationId: publishPropertySetRequested
+      message:
+        $ref: '#/components/messages/PropertySetRequested'
+    subscribe:
+      summary: Device Service проверяет, что у устройства есть свойство, и передаёт запрос устройству (device.property-set)
+      operationId: consumePropertySetRequested
+      message:
+        $ref: '#/components/messages/PropertySetRequested'
+
+  device.property-set:
+    description: Установка значения свойства устройства, принятая Device Service
+    publish:
+      summary: Device Service публикует новое значение свойства
+      operationId: publishPropertySet
+      message:
+        $ref: '#/components/messages/PropertySet'
+    subscribe:
+      summary: Device Gateway доставляет значение устройству
+      operationId: consumePropertySet
+      message:
+        $ref: '#/components/messages/PropertySet'
+
+  device.state-changed:
+    description: Устройство сообщило текущие значения своих свойств (в т.ч. после установки нового значения)
+    publish:
+      summary: Device Gateway публикует новое состояние
+      operationId: publishDeviceStateChanged
+      message:
+        $ref: '#/components/messages/DeviceStateChanged'
+    subscribe:
+      summary: Device Service обновляет значения свойств, Automation Service проверяет триггеры
+      operationId: consumeDeviceStateChanged
+      message:
+        $ref: '#/components/messages/DeviceStateChanged'
+
+components:
+  messages:
+    TelemetryReading:
+      name: TelemetryReading
+      contentType: application/json
+      payload:
+        type: object
+        required: [deviceId, metric, value, recordedAt]
+        properties:
+          deviceId: { type: string, format: uuid }
+          metric: { type: string, description: "temperature, humidity, motion, ..." }
+          value: { type: number }
+          unit: { type: string }
+          recordedAt: { type: string, format: date-time }
+      examples:
+        - name: temperature
+          payload:
+            deviceId: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+            metric: temperature
+            value: 21.8
+            unit: "°C"
+            recordedAt: "2026-10-03T11:55:00Z"
+
+    PropertySetRequested:
+      name: PropertySetRequested
+      contentType: application/json
+      payload:
+        type: object
+        required: [requestId, deviceId, property, value, scriptId, requestedAt]
+        properties:
+          requestId: { type: string, format: uuid, description: "Для идемпотентной обработки" }
+          deviceId: { type: string, format: uuid }
+          property: { type: string }
+          value: { description: "Строка, число или boolean" }
+          scriptId: { type: string, format: uuid }
+          requestedAt: { type: string, format: date-time }
+      examples:
+        - name: eveningHeating
+          payload:
+            requestId: "5a1d2f3e-7b8c-4d9e-a0f1-000000000007"
+            deviceId: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+            property: target_temperature
+            value: 23
+            scriptId: "9e8d7c6b-5a49-4382-9170-000000000001"
+            requestedAt: "2026-10-03T18:00:00Z"
+
+    PropertySet:
+      name: PropertySet
+      contentType: application/json
+      payload:
+        type: object
+        required: [deviceId, protocol, property, value, requestedAt]
+        properties:
+          deviceId: { type: string, format: uuid }
+          protocol: { type: string, description: "По нему Device Gateway выбирает адаптер" }
+          property: { type: string }
+          value: { description: "Строка, число или boolean" }
+          requestedAt: { type: string, format: date-time }
+      examples:
+        - name: setTemperature
+          payload:
+            deviceId: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+            protocol: mqtt
+            property: target_temperature
+            value: 22
+            requestedAt: "2026-10-03T09:15:00Z"
+
+    DeviceStateChanged:
+      name: DeviceStateChanged
+      contentType: application/json
+      payload:
+        type: object
+        required: [deviceId, status, properties, changedAt]
+        properties:
+          deviceId: { type: string, format: uuid }
+          status:
+            type: string
+            enum: [online, offline]
+          properties:
+            type: object
+            description: Текущие значения свойств устройства (имя → значение)
+            additionalProperties: true
+          changedAt: { type: string, format: date-time }
+      examples:
+        - name: temperatureSet
+          payload:
+            deviceId: "d3b07384-d9a0-4c3f-9a1e-2f5d8c7b6a51"
+            status: online
+            properties:
+              power: "on"
+              target_temperature: 22
+            changedAt: "2026-10-03T09:15:02Z"

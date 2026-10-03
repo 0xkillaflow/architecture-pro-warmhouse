@@ -1,221 +1,1110 @@
 {
-    "info": {
-        "_postman_id": "f8e3a123-4567-89ab-cdef-0123456789ab",
-        "name": "Smart Home Sensor API",
-        "description": "A collection for testing the Smart Home Sensor Management API",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  "info": {
+    "name": "Warm House",
+    "description": "Все запросы экосистемы «Тёплый дом» (MVP). Основные запросы идут через API Gateway (gatewayUrl). Запросы «Create ...» сохраняют id созданной сущности в переменные коллекции, поэтому папки удобно запускать по порядку (Run collection). Как запустить стек — apps/README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:8000"
     },
-    "item": [
+    {
+      "key": "monolithUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "temperatureApiUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "deviceServiceUrl",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "telemetryServiceUrl",
+      "value": "http://localhost:8083"
+    },
+    {
+      "key": "sensorId",
+      "value": "1"
+    },
+    {
+      "key": "deviceId",
+      "value": "1"
+    },
+    {
+      "key": "legacySensorId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Проверка, что все сервисы поднялись (напрямую, в обход gateway).",
+      "item": [
         {
-            "name": "Health Check",
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/health",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "health"
-                    ]
-                },
-                "description": "Check if the API is running"
-            },
-            "response": []
-        },
-        {
-            "name": "Get All Sensors",
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sensors",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sensors"
-                    ]
-                },
-                "description": "Retrieve all sensors"
-            },
-            "response": []
-        },
-        {
-            "name": "Get Sensor by ID",
-            "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sensors/1",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sensors",
-                        "1"
-                    ]
-                },
-                "description": "Retrieve a specific sensor by ID"
-            },
-            "response": []
-        },
-        {
-            "name": "Create Sensor",
-            "request": {
-                "method": "POST",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n    \"name\": \"Living Room Temperature\",\n    \"type\": \"temperature\",\n    \"location\": \"Living Room\",\n    \"unit\": \"°C\"\n}"
-                },
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sensors",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sensors"
-                    ]
-                },
-                "description": "Create a new sensor"
-            },
-            "response": []
-        },
-        {
-            "name": "Update Sensor",
-            "request": {
-                "method": "PUT",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n    \"name\": \"Updated Living Room Temperature\",\n    \"type\": \"temperature\",\n    \"location\": \"Living Room\",\n    \"unit\": \"°C\"\n}"
-                },
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sensors/1",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sensors",
-                        "1"
-                    ]
-                },
-                "description": "Update an existing sensor"
-            },
-            "response": []
-        },
-        {
-            "name": "Delete Sensor",
-            "request": {
-                "method": "DELETE",
-                "header": [],
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sensors/1",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sensors",
-                        "1"
-                    ]
-                },
-                "description": "Delete a sensor"
-            },
-            "response": []
-        },
-        {
-            "name": "Update Sensor Value",
-            "request": {
-                "method": "PATCH",
-                "header": [
-                    {
-                        "key": "Content-Type",
-                        "value": "application/json"
-                    }
-                ],
-                "body": {
-                    "mode": "raw",
-                    "raw": "{\n    \"value\": 22.5,\n    \"status\": \"active\"\n}"
-                },
-                "url": {
-                    "raw": "http://localhost:8080/api/v1/sensors/1/value",
-                    "protocol": "http",
-                    "host": [
-                        "localhost"
-                    ],
-                    "port": "8080",
-                    "path": [
-                        "api",
-                        "v1",
-                        "sensors",
-                        "1",
-                        "value"
-                    ]
-                },
-                "description": "Update a sensor's value and status"
-            },
-            "response": []
-        }
-    ],
-    "event": [
-        {
-            "listen": "prerequest",
-            "script": {
+          "name": "Monolith",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{monolithUrl}}/health",
+              "host": [
+                "{{monolithUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
                 "type": "text/javascript",
                 "exec": [
-                    ""
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
                 ]
+              }
             }
+          ]
         },
         {
-            "listen": "test",
-            "script": {
+          "name": "Temperature API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{temperatureApiUrl}}/health",
+              "host": [
+                "{{temperatureApiUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
                 "type": "text/javascript",
                 "exec": [
-                    ""
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
                 ]
+              }
             }
-        }
-    ],
-    "variable": [
+          ]
+        },
         {
-            "key": "baseUrl",
-            "value": "http://localhost:8080",
-            "type": "string"
+          "name": "Device Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{deviceServiceUrl}}/health",
+              "host": [
+                "{{deviceServiceUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Telemetry Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{telemetryServiceUrl}}/health",
+              "host": [
+                "{{telemetryServiceUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Gateway → Monolith",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/health",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "name": "Sensors (монолит через gateway)",
+      "item": [
+        {
+          "name": "Create Sensor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Living Room Temperature\",\n  \"type\": \"temperature\",\n  \"location\": \"Living Room\",\n  \"unit\": \"°C\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"sensorId\", pm.response.json().id);",
+                  "const s = pm.response.json();",
+                  "pm.test(\"Поля сенсора\", () => { pm.expect(s.name).to.eql(\"Living Room Temperature\"); pm.expect(s.location).to.eql(\"Living Room\"); pm.expect(s.status).to.eql(\"inactive\"); pm.expect(s.id).to.be.a(\"number\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Sensors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors"
+              ]
+            },
+            "description": "Для датчиков температуры монолит запрашивает текущее значение через telemetry-service, поэтому температура при каждом вызове разная, а история копится в Telemetry Service."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const s = pm.response.json().find(x => x.id == pm.collectionVariables.get(\"sensorId\"));",
+                  "pm.test(\"Созданный сенсор в списке, температура от датчика\", () => { pm.expect(s).to.exist; pm.expect(s.value).to.be.within(18, 26); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Sensor by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/{{sensorId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "{{sensorId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Тот же сенсор\", () => pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"sensorId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Temperature by Location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/temperature/Living%20Room",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "temperature",
+                "Living Room"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Температура для Living Room\", () => { const t = pm.response.json(); pm.expect(t.location).to.eql(\"Living Room\"); pm.expect(t.value).to.be.within(18, 26); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Sensor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/{{sensorId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "{{sensorId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Living Room Temperature\",\n  \"type\": \"temperature\",\n  \"location\": \"Living Room\",\n  \"unit\": \"°C\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Имя обновлено\", () => pm.expect(pm.response.json().name).to.eql(\"Updated Living Room Temperature\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Sensor Value",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/{{sensorId}}/value",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "{{sensorId}}",
+                "value"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": 22.5,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Sensor after update",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/{{sensorId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "{{sensorId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const s = pm.response.json();",
+                  "pm.test(\"Изменения сохранены в БД\", () => { pm.expect(s.name).to.eql(\"Updated Living Room Temperature\"); pm.expect(s.status).to.eql(\"active\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Sensor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/{{sensorId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "{{sensorId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Sensor after delete → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/{{sensorId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "{{sensorId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Devices (Device Service через gateway)",
+      "item": [
+        {
+          "name": "Create Device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"houseId\": \"h1\",\n  \"type\": \"heating\",\n  \"name\": \"Котёл\",\n  \"serialNumber\": \"SN-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"deviceId\", pm.response.json().id);",
+                  "const d = pm.response.json();",
+                  "pm.test(\"Устройство без свойств\", () => { pm.expect(d.type).to.eql(\"heating\"); pm.expect(d.properties).to.eql({}); pm.expect(d.legacySensorId).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Temperature Device (дублируется в монолит)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"houseId\": \"h1\",\n  \"type\": \"temperature\",\n  \"name\": \"Kitchen Temperature\",\n  \"serialNumber\": \"SN-2\",\n  \"location\": \"Kitchen\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Strangler Fig: датчик температуры, зарегистрированный в Device Service, дублируется в монолит (POST /api/v1/sensors), чтобы его видели клиенты старого API. legacySensorId — id датчика в монолите."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"legacySensorId\", pm.response.json().legacySensorId);",
+                  "pm.test(\"Device Service создал датчик в монолите\", () => pm.expect(pm.response.json().legacySensorId).to.be.a(\"number\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Датчик виден в монолите",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/sensors/{{legacySensorId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sensors",
+                "{{legacySensorId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const s = pm.response.json();",
+                  "pm.test(\"Датчик из Device Service\", () => { pm.expect(s.name).to.eql(\"Kitchen Temperature\"); pm.expect(s.location).to.eql(\"Kitchen\"); pm.expect(s.type).to.eql(\"temperature\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Devices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set Property: power = on",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices/{{deviceId}}/properties/power",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}",
+                "properties",
+                "power"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": \"on\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"power = on\", () => pm.expect(pm.response.json().properties.power).to.eql(\"on\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set Property: target_temperature = 22.5",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices/{{deviceId}}/properties/target_temperature",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}",
+                "properties",
+                "target_temperature"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"value\": 22.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"target_temperature = 22.5\", () => pm.expect(pm.response.json().properties.target_temperature).to.eql(22.5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Device (текущие значения свойств)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices/{{deviceId}}",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Оба свойства сохранены\", () => pm.expect(pm.response.json().properties).to.eql({power: \"on\", target_temperature: 22.5}));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set Property без value → 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices/{{deviceId}}/properties/power",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "{{deviceId}}",
+                "properties",
+                "power"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Device: не найдено → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/devices/999999",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "devices",
+                "999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Telemetry (Telemetry Service через gateway)",
+      "item": [
+        {
+          "name": "Add Reading",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/telemetry",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "telemetry"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensor_id\": \"test-1\",\n  \"value\": 21.7,\n  \"unit\": \"°C\",\n  \"location\": \"Living Room\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/telemetry/test-1",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "telemetry",
+                "test-1"
+              ]
+            },
+            "description": "История показаний датчика (новые сверху), включая показания, которые монолит получил через telemetry-service."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Последнее показание — добавленное\", () => { const h = pm.response.json(); pm.expect(h[0].value).to.eql(21.7); pm.expect(h[0].timestamp).to.be.a(\"string\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Temperature contract (напрямую)",
+      "description": "Контракт эмулятора датчика. Telemetry Service реализует тот же контракт и сохраняет каждое показание в историю.",
+      "item": [
+        {
+          "name": "Temperature API: by location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{temperatureApiUrl}}/temperature?location=Kitchen",
+              "host": [
+                "{{temperatureApiUrl}}"
+              ],
+              "path": [
+                "temperature"
+              ],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "Kitchen"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Temperature API: by sensor id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{temperatureApiUrl}}/temperature/1",
+              "host": [
+                "{{temperatureApiUrl}}"
+              ],
+              "path": [
+                "temperature",
+                "1"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Telemetry Service: by location",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{telemetryServiceUrl}}/temperature?location=Bedroom",
+              "host": [
+                "{{telemetryServiceUrl}}"
+              ],
+              "path": [
+                "temperature"
+              ],
+              "query": [
+                {
+                  "key": "location",
+                  "value": "Bedroom"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Telemetry Service: by sensor id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{telemetryServiceUrl}}/temperature/2",
+              "host": [
+                "{{telemetryServiceUrl}}"
+              ],
+              "path": [
+                "temperature",
+                "2"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "История датчика 2 пополнилась",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayUrl}}/api/v1/telemetry/2",
+              "host": [
+                "{{gatewayUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "telemetry",
+                "2"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Показание сохранено в истории\", () => { const h = pm.response.json(); pm.expect(h.length).to.be.above(0); pm.expect(h[0].sensor_id).to.eql(\"2\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

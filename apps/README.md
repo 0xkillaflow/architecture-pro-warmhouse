@@ -1,60 +1,35 @@
-# Smart Home Sensor Management API
+# Запуск «Тёплого дома» локально
 
-## Prerequisites
+Все сервисы MVP запускаются одной командой через Docker Compose.
 
-- Docker and Docker Compose
+## Требования
 
-## Getting Started
+- Docker;
+- Свободные порты: `5432`, `8000`, `8080`-`8083`;
 
-### Option 1: Using Docker Compose (Recommended)
-
-The easiest way to start the application is to use Docker Compose:
-
-```bash
-./init.sh
-```
-
-This script will:
-
-1. Build and start the PostgreSQL and application containers
-2. Wait for the services to be ready
-3. Display information about how to access the API
-
-Alternatively, you can run Docker Compose directly:
+## Запуск
 
 ```bash
-docker-compose up -d
+cd apps && docker compose up -d --build --wait
 ```
 
-The API will be available at http://localhost:8080
 
-### Option 2: Manual setup
+## Сервисы
 
-If you prefer to run the application without Docker:
+| Сервис            | Адрес                  | Что это |
+|-------------------|------------------------|---------|
+| gateway           | http://localhost:8000  | API Gateway (nginx), основная точка входа |
+| app               | http://localhost:8080  | Монолит Smart Home (Go), датчики `/api/v1/sensors` |
+| temperature-api   | http://localhost:8081  | Эмулятор датчика температуры (Python/FastAPI) |
+| device-service    | http://localhost:8082  | Устройства и их свойства (Java 25, Spring Boot 4) |
+| telemetry-service | http://localhost:8083  | История телеметрии (Python/FastAPI), монолит получает температуру через него |
+| postgres          | localhost:5432         | БД монолита, пользователь и пароль `postgres`, база `smarthome` |
 
-1. Start the PostgreSQL database:
+Маршруты gateway: `/api/v1/devices` → device-service, `/api/v1/telemetry` → telemetry-service,
+всё остальное → монолит.
 
-```bash
-docker-compose up -d postgres
-```
+## Проверка
 
-2. Build and run the application:
+### Postman
 
-```bash
-go build -o smarthome
-./smarthome
-```
-
-## API Testing
-
-A Postman collection is provided for testing the API. Import the `smarthome-api.postman_collection.json` file into Postman to get started.
-
-## API Endpoints
-
-- `GET /health` - Health check
-- `GET /api/v1/sensors` - Get all sensors
-- `GET /api/v1/sensors/:id` - Get a specific sensor
-- `POST /api/v1/sensors` - Create a new sensor
-- `PUT /api/v1/sensors/:id` - Update a sensor
-- `DELETE /api/v1/sensors/:id` - Delete a sensor
-- `PATCH /api/v1/sensors/:id/value` - Update a sensor's value and status
+Импортируйте [`smarthome-api.postman_collection.json`](smarthome-api.postman_collection.json).

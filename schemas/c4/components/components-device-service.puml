@@ -1,0 +1,37 @@
+@startuml components-device-service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Component - Device Service
+
+Container(gateway, "API Gateway", "nginx")
+ContainerDb(device_db, "Devices DB", "PostgreSQL")
+ContainerQueue(kafka, "Message Broker", "Kafka")
+
+Container_Boundary(device_svc, "Device Service") {
+    Component(api, "Device API", "Spring MVC REST Controller", "Эндпоинты /devices, /devices/{id}/properties/{name}")
+    Component(access, "Access Checker", "Spring Security", "Проверяет, что дом устройства есть в claim houses JWT пользователя")
+    Component(registry, "Device Registry", "Spring Service", "Регистрация, изменение и удаление устройств")
+    Component(types, "Device Type Catalog", "Spring Service", "Справочник типов устройств; новый тип добавляется данными, без кода")
+    Component(props, "Property Service", "Spring Service", "Проверяет, что у устройства есть свойство, и отправляет новое значение устройству")
+    Component(state, "Device State Manager", "Spring Service", "Обновляет значения свойств устройства (DeviceProperty) по подтверждению от устройства")
+    Component(repo, "Repositories", "Spring Data JPA", "Device, DeviceProperty, DeviceType")
+    Component(publisher, "Event Publisher", "Kafka producer", "device.property-set")
+    Component(consumer, "Event Consumer", "Kafka consumer", "device.property-set-requested, device.state-changed")
+}
+
+Rel(gateway, api, "REST", "JSON/HTTPS")
+Rel(api, access, "Проверка доступа")
+Rel(api, registry, "Использует")
+Rel(api, props, "Установка значения пользователем")
+Rel(registry, types, "Проверяет тип")
+Rel(registry, repo, "Использует")
+Rel(props, repo, "Читает свойства устройства")
+Rel(props, publisher, "Публикует новое значение")
+Rel(kafka, consumer, "device.property-set-requested, device.state-changed")
+Rel(consumer, props, "Установка значения сценарием (device.property-set-requested)")
+Rel(consumer, state, "Новое состояние (device.state-changed)")
+Rel(state, repo, "Обновляет значения свойств")
+Rel(repo, device_db, "SQL")
+Rel(publisher, kafka, "device.property-set")
+
+@enduml

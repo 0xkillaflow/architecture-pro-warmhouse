@@ -1,0 +1,63 @@
+@startuml containers-to-be
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title C4 Container - экосистема «Тёплый дом» (To-Be)
+
+Person(user, "Пользователь", "Подключает устройства, управляет ими, настраивает сценарии, смотрит телеметрию")
+Person(support, "Поддержка", "Сотрудник службы поддержки клиентов")
+
+System_Ext(devices, "Устройства партнёров", "Датчики, реле, лампы, ворота, камеры; MQTT / HTTP / протоколы партнёров")
+
+System_Boundary(eco, "Экосистема «Тёплый дом»") {
+    Container(app, "Web / Mobile App", "React SPA, мобильное приложение", "Интерфейс пользователя")
+    Container(gateway, "API Gateway", "nginx", "Единая точка входа, маршрутизация, проверка JWT")
+
+    Container(user_svc, "User & Home Service", "Go", "Пользователи, дома, комнаты, права доступа; выдаёт JWT со списком домов пользователя")
+    ContainerDb(user_db, "Users DB", "PostgreSQL")
+
+    Container(device_svc, "Device Service", "Java, Spring Boot", "Реестр устройств и типов, свойства устройств: просмотр и установка значений; доступ к дому проверяет по JWT")
+    ContainerDb(device_db, "Devices DB", "PostgreSQL")
+
+    Container(telemetry_svc, "Telemetry Service", "Python, FastAPI", "Приём, хранение и выдача телеметрии")
+    ContainerDb(telemetry_db, "Telemetry DB", "PostgreSQL + TimescaleDB")
+
+    Container(automation_svc, "Automation Service", "Go", "Пользовательские сценарии: триггеры и действия")
+    ContainerDb(automation_db, "Automation DB", "PostgreSQL")
+
+    Container(device_gw, "Device Gateway", "Go", "Адаптеры протоколов партнёров, нормализация сообщений устройств")
+    ContainerQueue(mqtt, "MQTT Broker", "EMQX", "Подключение устройств")
+    ContainerQueue(kafka, "Message Broker", "Kafka", "Асинхронное взаимодействие сервисов")
+}
+
+' --- Синхронно: только запросы клиентов ---
+Rel(user, app, "Использует", "HTTPS")
+Rel(support, app, "Использует (роль support)", "HTTPS")
+Rel(app, gateway, "API-запросы", "HTTPS/REST")
+
+Rel(gateway, user_svc, "Маршрутизирует", "REST")
+Rel(gateway, device_svc, "Маршрутизирует (в т.ч. установку значений свойств, ответ 202)", "REST")
+Rel(gateway, telemetry_svc, "Маршрутизирует", "REST")
+Rel(gateway, automation_svc, "Маршрутизирует", "REST")
+
+Rel(user_svc, user_db, "Читает/пишет", "SQL")
+Rel(device_svc, device_db, "Читает/пишет", "SQL")
+Rel(telemetry_svc, telemetry_db, "Читает/пишет", "SQL")
+Rel(automation_svc, automation_db, "Читает/пишет", "SQL")
+
+' --- Путь записи: установка значения свойства устройства ---
+Rel(automation_svc, kafka, "device.property-set-requested", "Kafka")
+Rel(device_svc, kafka, "device.property-set", "Kafka")
+Rel(kafka, device_gw, "device.property-set", "Kafka")
+Rel(device_gw, mqtt, "devices/{id}/set", "MQTT")
+Rel(mqtt, devices, "Новые значения свойств", "MQTT/TLS")
+
+' --- Путь чтения: телеметрия и состояние устройств ---
+Rel(devices, mqtt, "Телеметрия, текущие значения свойств", "MQTT/TLS")
+Rel(mqtt, device_gw, "devices/+/telemetry, devices/+/state", "MQTT")
+Rel(devices, device_gw, "Устройства без MQTT: отправляют телеметрию, забирают новые значения свойств (long-polling / WebSocket)", "HTTPS")
+Rel(device_gw, kafka, "telemetry.reading, device.state-changed", "Kafka")
+Rel(kafka, device_svc, "device.property-set-requested, device.state-changed", "Kafka")
+Rel(kafka, telemetry_svc, "telemetry.reading", "Kafka")
+Rel(kafka, automation_svc, "telemetry.reading, device.state-changed", "Kafka")
+
+@enduml
