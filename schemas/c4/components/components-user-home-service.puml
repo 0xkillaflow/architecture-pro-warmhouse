@@ -1,0 +1,28 @@
+@startuml components-user-home-service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Component - User & Home Service
+
+Container(gateway, "API Gateway", "nginx")
+ContainerDb(user_db, "Users DB", "PostgreSQL")
+
+Container_Boundary(user_svc, "User & Home Service") {
+    Component(auth, "Auth API", "REST handler", "Регистрация, вход, выдача и обновление JWT (claims: userId, role, houses)")
+    Component(user_api, "User API", "REST handler", "Профиль пользователя")
+    Component(home_api, "Home API", "REST handler", "Дома и комнаты пользователя")
+    Component(access, "Access Manager", "Go", "Права пользователя на дом (owner / support); формирует список домов для JWT")
+    Component(repo, "Repositories", "Go, pgx", "User, House, Room")
+}
+
+Rel(gateway, auth, "REST", "JSON/HTTPS")
+Rel(gateway, user_api, "REST", "JSON/HTTPS")
+Rel(gateway, home_api, "REST", "JSON/HTTPS")
+Rel(auth, access, "Список домов для JWT")
+Rel(auth, repo, "Использует")
+Rel(user_api, repo, "Использует")
+Rel(home_api, access, "Использует")
+Rel(home_api, repo, "Использует")
+Rel(access, repo, "Использует")
+Rel(repo, user_db, "SQL")
+
+@enduml

@@ -1,0 +1,92 @@
+@startuml code-device-service-classes
+title Code - Device Service, основные классы
+
+class DeviceController {
+  +getDevice(id): DeviceDto
+  +registerDevice(req): DeviceDto
+  +updateDevice(id, req): DeviceDto
+  +setProperty(id, name, req): PropertySetAccepted
+}
+
+class DeviceRegistry {
+  +register(houseId, typeCode, serialNumber, name): Device
+  +update(id, changes): Device
+  +get(id): Device
+}
+
+class PropertyService {
+  +setProperty(deviceId, name, value)
+}
+
+class DeviceStateManager {
+  +onStateChanged(event: DeviceStateChangedEvent)
+}
+
+class DeviceEventConsumer {
+  +onPropertySetRequested(event: PropertySetRequestedEvent)
+  +onStateChanged(event: DeviceStateChangedEvent)
+}
+
+class DeviceTypeCatalog {
+  +getByCode(code): DeviceType
+}
+
+interface EventPublisher {
+  +publishPropertySet(deviceId, protocol, name, value)
+}
+
+class KafkaEventPublisher
+
+class Device {
+  id: UUID
+  houseId: UUID
+  roomId: UUID
+  serialNumber: String
+  name: String
+  status: DeviceStatus
+  properties: List<DeviceProperty>
+  lastSeenAt: Instant
+}
+
+class DeviceProperty {
+  name: String
+  value: String
+  updatedAt: Instant
+}
+
+class DeviceType {
+  id: UUID
+  code: String
+  name: String
+  protocol: String
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  DISABLED
+}
+
+DeviceController --> DeviceRegistry
+DeviceController --> PropertyService
+DeviceEventConsumer --> PropertyService
+DeviceEventConsumer --> DeviceStateManager
+DeviceRegistry --> DeviceTypeCatalog
+PropertyService --> Device
+PropertyService --> EventPublisher
+EventPublisher <|.. KafkaEventPublisher
+DeviceStateManager --> Device
+
+Device "*" --> "1" DeviceType
+Device "1" *-- "*" DeviceProperty
+Device --> DeviceStatus
+
+note right of DeviceType
+  Новый (в т.ч. неизвестный заранее) тип устройства
+  добавляется записью в справочнике, без изменения
+  кода сервиса. Набор свойств устройство сообщает
+  само в device.state-changed. Протокол поддерживает
+  адаптер в Device Gateway.
+end note
+
+@enduml

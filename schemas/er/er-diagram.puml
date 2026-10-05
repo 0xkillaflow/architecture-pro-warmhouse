@@ -1,0 +1,133 @@
+@startuml er-diagram
+title ER-диаграмма экосистемы «Тёплый дом» (логическая модель)
+
+hide circle
+skinparam linetype ortho
+
+package "User & Home Service" {
+  entity "User" as user {
+    * id : UUID <<PK>>
+    --
+    * email : varchar
+    * password_hash : varchar
+    * name : varchar
+    phone : varchar
+    * role : varchar  -- owner / support
+    * created_at : timestamptz
+  }
+
+  entity "House" as house {
+    * id : UUID <<PK>>
+    --
+    * user_id : UUID <<FK>>
+    * name : varchar
+    * address : varchar
+    * timezone : varchar
+    * created_at : timestamptz
+  }
+
+  entity "Room" as room {
+    * id : UUID <<PK>>
+    --
+    * house_id : UUID <<FK>>
+    * name : varchar
+  }
+}
+
+package "Device Service" {
+  entity "DeviceType" as device_type {
+    * id : UUID <<PK>>
+    --
+    * code : varchar  -- heating, light, gate, camera...
+    * name : varchar
+    * protocol : varchar  -- mqtt, http, zigbee...
+  }
+
+  entity "Device" as device {
+    * id : UUID <<PK>>
+    --
+    * type_id : UUID <<FK>>
+    * house_id : UUID <<FK>>
+    room_id : UUID <<FK>>
+    * serial_number : varchar
+    * name : varchar
+    * status : varchar  -- online / offline / disabled
+    last_seen_at : timestamptz
+    * created_at : timestamptz
+  }
+
+  entity "DeviceProperty" as property {
+    * id : UUID <<PK>>
+    --
+    * device_id : UUID <<FK>>
+    * name : varchar  -- power, target_temperature, position...
+    * value : varchar
+    * updated_at : timestamptz
+    unique (device_id, name)
+  }
+}
+
+package "Telemetry Service" {
+  entity "TelemetryData" as telemetry {
+    * id : bigint <<PK>>
+    --
+    * device_id : UUID <<FK>>
+    * metric : varchar  -- temperature, humidity, motion...
+    * value : double
+    unit : varchar
+    * recorded_at : timestamptz
+  }
+}
+
+package "Automation Service" {
+  entity "Script" as script {
+    * id : UUID <<PK>>
+    --
+    * house_id : UUID <<FK>>
+    * name : varchar
+    * enabled : boolean
+    schedule : varchar  -- cron, если скрипт запускается по расписанию
+    * created_at : timestamptz
+  }
+
+  entity "ScriptCondition" as condition {
+    * id : UUID <<PK>>
+    --
+    * script_id : UUID <<FK>>
+    * device_id : UUID <<FK>>
+    * metric : varchar  -- temperature, motion, power...
+    * operator : varchar  -- >, <, =, !=
+    * value : varchar
+  }
+
+  entity "ScriptAction" as action {
+    * id : UUID <<PK>>
+    --
+    * script_id : UUID <<FK>>
+    * device_id : UUID <<FK>>
+    * property : varchar  -- имя свойства устройства
+    * value : varchar  -- значение, которое нужно установить
+    * position : int
+  }
+}
+
+user ||--o{ house : владеет
+house ||--o{ room : содержит
+house ||--o{ device : содержит
+room |o--o{ device : расположено
+device_type ||--o{ device : тип
+device ||--o{ property : свойства
+device ||--o{ telemetry : генерирует
+house ||--o{ script : настроены
+script ||--o{ condition : условия
+script ||--|{ action : состоит из
+device ||--o{ condition : источник данных
+device ||--o{ action : цель действия
+
+note bottom of telemetry
+  Связи между сущностями разных сервисов логические:
+  каждый сервис владеет своей БД, физических FK между
+  базами нет, ссылка хранится как идентификатор.
+end note
+
+@enduml

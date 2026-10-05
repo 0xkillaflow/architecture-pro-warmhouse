@@ -1,0 +1,35 @@
+@startuml components-device-gateway
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_LEFT_RIGHT()
+
+title C4 Component - Device Gateway
+
+System_Ext(devices, "Устройства партнёров", "MQTT / HTTP / протоколы партнёров")
+ContainerQueue(mqtt, "MQTT Broker", "EMQX")
+ContainerQueue(kafka, "Message Broker", "Kafka")
+
+Container_Boundary(device_gw, "Device Gateway") {
+    Component(mqtt_client, "MQTT Client", "Go", "Подписка на топики devices/+/telemetry, devices/+/state; публикация devices/{id}/set")
+    Component(adapters, "Protocol Adapters", "Go, плагины", "Адаптер на каждый протокол или партнёра; новый тип устройств подключается добавлением адаптера")
+    Component(normalizer, "Message Normalizer", "Go", "Приводит сообщения к единому формату (deviceId, metric, value, unit, ts)")
+    Component(router, "Property Router", "Go", "Выбирает адаптер по протоколу устройства и отправляет ему новое значение свойства")
+    Component(producer, "Event Producer", "Kafka producer", "telemetry.reading, device.state-changed")
+    Component(consumer, "Property Consumer", "Kafka consumer", "device.property-set")
+}
+
+Rel(devices, mqtt, "Телеметрия, состояние", "MQTT/TLS")
+Rel(mqtt, mqtt_client, "devices/+/telemetry, devices/+/state")
+Rel(mqtt_client, adapters, "Сырые сообщения")
+Rel(devices, adapters, "Устройства без MQTT: телеметрия, получение новых значений свойств (long-polling / WebSocket)", "HTTPS")
+Rel(adapters, normalizer, "Разобранные данные")
+Rel(normalizer, producer, "Единый формат")
+Rel(producer, kafka, "telemetry.reading, device.state-changed")
+Rel(kafka, consumer, "device.property-set")
+Rel(consumer, router, "Новое значение свойства")
+Rel(router, adapters, "Значение в формате протокола")
+Rel(adapters, mqtt_client, "Значение для MQTT-устройства")
+Rel(mqtt_client, mqtt, "devices/{id}/set")
+Rel(mqtt, devices, "Новые значения свойств", "MQTT/TLS")
+
+@enduml

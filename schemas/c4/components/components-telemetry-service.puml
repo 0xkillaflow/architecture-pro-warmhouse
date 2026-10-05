@@ -1,0 +1,26 @@
+@startuml components-telemetry-service
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title C4 Component - Telemetry Service
+
+Container(gateway, "API Gateway", "nginx")
+ContainerDb(telemetry_db, "Telemetry DB", "PostgreSQL + TimescaleDB")
+ContainerQueue(kafka, "Message Broker", "Kafka")
+
+Container_Boundary(telemetry_svc, "Telemetry Service") {
+    Component(consumer, "Telemetry Consumer", "Kafka consumer", "Читает telemetry.reading")
+    Component(ingest, "Ingestion Handler", "Python class", "Валидирует и нормализует показания (единицы, метрики), складывает пачками")
+    Component(query_api, "Telemetry Query API", "FastAPI router", "История и последние значения по устройству или дому")
+    Component(query, "Query Service", "Python class", "Выборки за период, агрегаты (среднее, мин., макс.)")
+    Component(repo, "Telemetry Repository", "SQLAlchemy", "Запись и чтение временных рядов")
+}
+
+Rel(kafka, consumer, "telemetry.reading")
+Rel(consumer, ingest, "Передаёт показания")
+Rel(ingest, repo, "Сохраняет")
+Rel(gateway, query_api, "GET /telemetry", "REST")
+Rel(query_api, query, "Использует")
+Rel(query, repo, "Читает")
+Rel(repo, telemetry_db, "SQL")
+
+@enduml
